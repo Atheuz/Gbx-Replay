@@ -20,16 +20,14 @@ def handle_file(*args):
             k['gbx_type'] = gbx_type
             k['filename'] = fn
             k['replay_timestamp'] = ms2ts(k['replay_time'])
-            txt_file = './output/%s.txt' % ''.join([x for x in fn if x.isalnum])
-            with open(txt_file, 'w') as w:
-                s = ''
-                for i,j in k.iteritems():
-                    s += "%s,%s\n" % (i,j)
-                w.write(s + '\n')
-                w.close()
+#             txt_file = './output/%s.txt' % ''.join([x for x in fn if x.isalnum])
+#             with open(txt_file, 'w') as w:
+#                 s = ''
+#                 for i,j in k.iteritems():
+#                     s += "%s,%s\n" % (i,j)
+#                 w.write(s + '\n')
+#                 w.close()
             return k
-            #for i in k.iteritems():
-            #    print i
         elif gbx_type == 'challenge':
             k['gbx_type'] = gbx_type
             k['filename'] = fn
@@ -38,16 +36,14 @@ def handle_file(*args):
                 # Too spacey.
                 im_f.close()
             del k['thumbnail']
-            txt_file = './output/%s.txt' % ''.join([x for x in fn if x.isalnum])
-            with open(txt_file, 'w') as w:
-                s = ''
-                for i,j in k.iteritems():
-                    s += "%s,%s\n" % (i,j)
-                w.write(s + '\n')
-                w.close()
+#             txt_file = './output/%s.txt' % ''.join([x for x in fn if x.isalnum])
+#             with open(txt_file, 'w') as w:
+#                 s = ''
+#                 for i,j in k.iteritems():
+#                     s += "%s,%s\n" % (i,j)
+#                 w.write(s + '\n')
+#                 w.close()
             return k
-            #for i in k.iteritems():
-            #    print i
     else:
         sys.exit('Something went wrong. You should not be seeing this.')
 
