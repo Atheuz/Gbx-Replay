@@ -1,0 +1,235 @@
+// Sample pseudo code to read the uncompressed contents from a challenge file
+
+// Jump to header size
+SetFilePointer(hFile, 13, FILE_BEGIN);
+
+// Read header size
+ReadFile(hFile, &ulHeaderSize, 4);
+
+// Number of chunks in header
+ReadFile(hFile, &ulNumHeaderChunks, 4);
+
+// Determine chunk sizes and positions
+ulChunkOffset = 21 + (ulNumHeaderChunks * 8);
+ulVehicleChunkSize = ulInfoChunkSize = ulStringChunkSize = 0;
+ulVersionChunkSize = ulXmlChunkSize = ulThumbnailChunkSize = 0;
+ulVehicleChunkOffset = ulInfoChunkOffset = ulStringChunkOffset = 0;
+ulVersionChunkOffset = ulXmlChunkOffset = ulThumbnailChunkOffset = 0;
+
+for (ulCouter = 1; ulCouter <= ulNumHeaderChunks; ulCouter++)
+{
+    ReadFile(hFile, &ulChunkId, 4);
+    ReadFile(hFile, &ulChunkSize, 4);
+
+    ulChunkSize &= 0x7FFFFFFF;
+
+    // Not required blocks can be commented out
+    switch (ulChunkId & 0x00000FFF)
+    {
+    case 0x002: // Info chunk (TM only)
+        ulInfoChunkSize = ulChunkSize;
+        ulInfoChunkOffset = ulChunkOffset;
+        ulChunkOffset += ulChunkSize;
+        break;
+    case 0x003: // String chunk (TM, VSK)
+        ulStringChunkSize = ulChunkSize;
+        ulStringChunkOffset = ulChunkOffset;
+        ulChunkOffset += ulChunkSize;
+        break;
+    case 0x004: // Version chunk (TM, VSK)
+        ulVersionChunkSize = ulChunkSize;
+        ulVersionChunkOffset = ulChunkOffset;
+        ulChunkOffset += ulChunkSize;
+        break;
+    case 0x005: // XML chunk (TM, VSK)
+        ulXmlChunkSize = ulChunkSize;
+        ulXmlChunkOffset = ulChunkOffset;
+        ulChunkOffset += ulChunkSize;
+        break;
+    case 0x007: // Thumbnail chunk (TM, VSK)
+        ulThumbnailChunkSize = ulChunkSize;
+        ulThumbnailChunkOffset = ulChunkOffset;
+        ulChunkOffset += ulChunkSize;
+        break;
+    case 0x001: // Vehicle chunk (VSK only)
+        ulVehicleChunkSize = ulChunkSize;
+        ulVehicleChunkOffset = ulChunkOffset;
+        ulChunkOffset += ulChunkSize;
+        break;
+    default: // Remaining chunks
+        ulChunkOffset += ulChunkSize;
+        break;
+    }
+}
+
+// Version chunk
+if (ulVersionChunkSize > 0)
+{
+    // Jump to version chunk
+    SetFilePointer(hFile, ulVersionChunkOffset, FILE_BEGIN);
+
+    // Challenge version
+    ReadFile(hFile, &ulVersion, 4);
+}
+
+// Info chunk
+if (ulInfoChunkSize > 0)
+{
+    // Jump to info chunk
+    SetFilePointer(hFile, ulInfoChunkOffset, FILE_BEGIN);
+
+    // Read version
+    ReadFile(hFile, &bInfoVer, 1);
+
+    // Use chunk size instead of version
+    if (ulInfoChunkSize >= 0x15)
+    {
+        // Jump to Bronze
+        SetFilePointer(hFile, 4, FILE_CURRENT);
+
+        // Bronze
+        ReadFile(hFile, &lBronze, 4);
+
+        // Silver
+        ReadFile(hFile, &lSilver, 4);
+
+        // Gold
+        ReadFile(hFile, &lGold, 4);
+
+        // Authortime
+        ReadFile(hFile, &lAuthortime, 4);
+
+        if (ulInfoChunkSize >= 0x19)
+        {
+            // Coppers
+            ReadFile(hFile, &ulPrice, 4);
+
+            if (ulInfoChunkSize >= 0x21)
+            {
+                // Multilap
+                ReadFile(hFile, &ulNbLaps, 4);
+
+                // Track type
+                ReadFile(hFile, &ulTrackType, 4);
+
+                if (ulInfoChunkSize >= 0x29)
+                {
+                    SetFilePointer(hFile, 4, NULL, FILE_CURRENT);
+
+                    // Author score
+                    ReadFile(hFile, &lAuthorscore, 4);
+                }
+            }
+        }
+    }
+}
+
+// String chunk
+if (ulStringChunkSize > 0)
+{
+    // Jump to string chunk
+    SetFilePointer(hFile, ulStringChunkOffset, FILE_BEGIN);
+
+    // Read version
+    ReadFile(hFile, &bStrVer, 1);
+
+    // Jump to UID size
+    SetFilePointer(hFile, 8, FILE_CURRENT);
+
+    // Read UID size
+    ReadFile(hFile, &ulLen, 4);
+
+    // Read UID
+    ReadFile(hFile, pUID, ulLen);
+
+    // Jump to environment size
+    SetFilePointer(hFile, 4, FILE_CURRENT);
+
+    // Read environment size
+    ReadFile(hFile, &ulLen, 4);
+
+    // Read Environment
+    ReadFile(hFile, pEnvir, ulLen);
+
+    // Jump to author name size
+    SetFilePointer(hFile, 4, FILE_CURRENT);
+
+    // Read author name size
+    ReadFile(hFile, &ulLen, 4);
+
+    // Read author name
+    ReadFile(hFile, pAuthor, ulLen);
+
+    // Read track name size
+    ReadFile(hFile, &ulLen, 4);
+
+    // Read track name
+    ReadFile(hFile, pTrackname, ulLen);
+
+    if (bStrVer >= 1)
+    {
+        // Jump to password size
+        SetFilePointer(hFile, 5, FILE_CURRENT);
+
+        // Read password size
+        ReadFile(hFile, &ulLen, 4);
+
+        if (bStrVer >= 2)
+        {
+            // Jump to mood
+            SetFilePointer(hFile, ulLen + 4, FILE_CURRENT);
+
+            // Read mood size
+            ReadFile(hFile, &ulLen, 4);
+
+            // Read mood name
+            ReadFile(hFile, pMood, ulLen);
+        }
+    }
+}
+
+// XML chunk
+if (ulXmlChunkSize > 0)
+{
+    // Jump to XML chunk
+    SetFilePointer(hFile, ulXmlChunkOffset, FILE_BEGIN);
+
+    // Read XML size
+    ReadFile(hFile, &ulLen, 4);
+    ulLen &= 0x7FFFFFFF;
+
+    // Read XML
+    ReadFile(hFile, pXml, ulLen);
+}
+
+// Thumbnail/Comments chunk
+if (ulThumbnailChunkSize > 0)
+{
+    // Jump to thumbnail chunk
+    SetFilePointer(hFile, ulThumbnailChunkOffset, FILE_BEGIN);
+
+    // Thumbnail existing?
+    ReadFile(hFile, &ulHaveThumbnail, 4);
+
+    if (ulHaveThumbnail != 0)
+    {
+        // Read thumbnail size
+        ReadFile(hFile, &ulLen, 4);
+
+        // Jump to thumbnail data
+        SetFilePointer(hFile, 15, FILE_CURRENT);
+
+        // Read thumbnail
+        ReadFile(hFile, pThumbnail, ulLen);
+
+        // Jump to comments size
+        SetFilePointer(hFile, 26, FILE_CURRENT);
+
+        // Read Comments size
+        ReadFile(hFile, &ulLen, 4);
+
+        // Read Comments
+        ReadFile(hFile, pComments, ulLen);
+    }
+}
+

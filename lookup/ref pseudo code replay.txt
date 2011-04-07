@@ -1,0 +1,113 @@
+// Sample pseudo code to read the uncompressed contents from a replay file
+
+// Jump to header size
+SetFilePointer(hFile, 13, FILE_BEGIN);
+
+// Read header size
+ReadFile(hFile, &ulHeaderSize, 4);
+
+// Number of chunks in header
+ReadFile(hFile, &ulNumHeaderChunks, 4);
+
+// Determine chunk sizes and positions
+ulChunkOffset = 21 + (ulNumHeaderChunks * 8);
+ulStringChunkSize = ulXmlChunkSize = ulStringChunkOffset = ulXmlChunkOffset = 0;
+
+for (ulCouter = 1; ulCouter <= ulNumHeaderChunks; ulCouter++)
+{
+    ReadFile(hFile, &ulChunkId, 4);
+    ReadFile(hFile, &ulChunkSize, 4);
+
+    ulChunkSize &= 0x7FFFFFFF;
+
+    // Not required blocks can be commented out
+    switch (ulChunkId & 0x00000FFF)
+    {
+    case 0x003: // String chunk (TM, VSK)
+        ulStringChunkSize = ulChunkSize;
+        ulStringChunkOffset = ulChunkOffset;
+        ulChunkOffset += ulChunkSize;
+        break;
+    case 0x005: // XML chunk (TM, VSK)
+        ulXmlChunkSize = ulChunkSize;
+        ulXmlChunkOffset = ulChunkOffset;
+        ulChunkOffset += ulChunkSize;
+        break;
+    default: // Remaining chunks
+        ulChunkOffset += ulChunkSize;
+        break;
+    }
+}
+
+// String chunk
+if (ulStringChunkSize > 4)
+{
+    // Jump to string chunk
+    SetFilePointer(hFile, ulStringChunkOffset, FILE_BEGIN);
+
+    // Read replay version
+    ReadFile(hFile, &ulVersion, 4);
+
+    if (ulVersion >= 2)
+    {
+        // Jump to UID size
+        SetFilePointer(hFile, 8, FILE_CURRENT);
+
+        // Read UID size
+        ReadFile(hFile, &ulLen, 4);
+
+        // Read UID
+        ReadFile(hFile, pUID, ulLen);
+
+        // Jump to environment size
+        SetFilePointer(hFile, 4, FILE_CURRENT);
+
+        // Read environment size
+        ReadFile(hFile, &ulLen, 4);
+
+        // Read Environment
+        ReadFile(hFile, pEnvir, ulLen);
+
+        // Jump to author name size
+        SetFilePointer(hFile, 4, FILE_CURRENT);
+
+        // Read author name size
+        ReadFile(hFile, &ulLen, 4);
+
+        // Read author name
+        ReadFile(hFile, pAuthor, ulLen);
+
+        // Read replay time
+        ReadFile(hFile, &ulTime, 4);
+
+        // Read nickname size
+        ReadFile(hFile, &ulLen, 4);
+
+        // Read nickname
+        ReadFile(hFile, pName, ulLen);
+
+        if (ulVersion > 5)
+        {
+            // Read login size
+            ReadFile(hFile, &ulLen, 4);
+
+            // Read login
+            ReadFile(hFile, pLogin, ulLen);
+        }
+    }
+}
+
+// XML chunk
+if (ulXmlChunkSize > 0)
+{
+    // Jump to XML chunk
+    SetFilePointer(hFile, ulXmlChunkOffset, FILE_BEGIN);
+
+    // Read XML size
+    ReadFile(hFile, &ulLen, 4);
+    ulLen &= 0x7FFFFFFF;
+
+    // Read XML
+    ReadFile(hFile, pXml, ulLen);
+}
+
