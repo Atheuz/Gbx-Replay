@@ -17,7 +17,6 @@ def process_file(*args):
         gbx_type = f.read(4).encode('hex')
         # Replay
         if gbx_type in ['00e00724','00f00324', '00300903']:
-            print f.tell()
             return replay(f), 'replay'
         # Challenge
         elif gbx_type in ['00300024','00300403']:
