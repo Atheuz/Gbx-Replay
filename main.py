@@ -8,6 +8,9 @@ from datetime import timedelta
 import sys
 import argparse
 
+def os_safe_name(s):
+    return ''.join([x for x in s if x != '/'])
+
 def ms2ts(*args):
     return str(timedelta(milliseconds=args[0]))
 
@@ -31,7 +34,7 @@ def handle_file(*args):
         elif gbx_type == 'challenge':
             k['gbx_type'] = gbx_type
             k['filename'] = fn
-            with open('.\output\%s.jpg' % k['track_name'], 'wb') as im_f:
+            with open('.\output\%s.jpg' % os_safe_name(k['track_name']), 'wb') as im_f:
                 im_f.write(k['thumbnail'])
                 # Too spacey.
                 im_f.close()
